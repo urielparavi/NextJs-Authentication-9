@@ -1,6 +1,21 @@
+import { verifyAuth } from '@/lib/auth';
 import { getTrainings } from '@/lib/training';
+import { redirect } from 'next/navigation';
 
 export default async function TrainingPage() {
+  const result = await verifyAuth();
+  // result:
+  // {
+  //   user: { ... } | null,
+  //   session: { id, userId, expiresAt, fresh, ... } | null
+  // }
+
+  // If no valid user is found (i.e., the session is invalid or expired),
+  // redirect the user to the homepage to prevent unauthorized access
+  if (!result.user) {
+    return redirect('/');
+  }
+
   const trainingSessions = getTrainings();
 
   return (
