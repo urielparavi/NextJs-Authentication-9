@@ -105,3 +105,14 @@ export async function login(prevState, formData) {
   await createAuthSession(existingUser.id);
   redirect('/training');
 }
+
+// This unified auth function decides whether to log in or sign up
+// based on the provided mode ('login' or 'signup').
+// It’s used as an action handler in the form component, with the mode
+// pre-bound using `.bind(null, mode)` to ensure the correct path is followed.
+export async function auth(mode, prevState, formData) {
+  if (mode === 'login') {
+    return login(prevState, formData);
+  }
+  return signup(prevState, formData);
+}

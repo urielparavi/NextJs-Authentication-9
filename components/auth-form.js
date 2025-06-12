@@ -1,12 +1,16 @@
 'use client';
 
-import { signup } from '@/actions/auth-actions';
+import { auth } from '@/actions/auth-actions';
 import Link from 'next/link';
 import { useActionState } from 'react';
 
 export default function AuthForm({ mode }) {
   // mode = 'login', 'signup'
-  const [formState, formAction] = useActionState(signup, {});
+
+  // Binds the current `mode` ('login' or 'signup') to the `auth` function,
+  // so that `useActionState` only needs to provide `prevState` and `formData` when triggered.
+  // This ensures `mode` stays constant for this form instance.
+  const [formState, formAction] = useActionState(auth.bind(null, mode), {});
   return (
     <form id="auth-form" action={formAction}>
       <div>
