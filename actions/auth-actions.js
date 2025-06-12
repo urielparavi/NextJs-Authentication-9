@@ -1,8 +1,8 @@
 'use server';
 
 import { createAuthSession } from '@/lib/auth';
-import { hashUserPassword } from '@/lib/hash';
-import { createUser } from '@/lib/user';
+import { hashUserPassword, verifyPassword } from '@/lib/hash';
+import { createUser, getUserByEmail } from '@/lib/user';
 import { redirect } from 'next/navigation';
 
 export async function signup(prevState, formData) {
@@ -51,4 +51,57 @@ export async function signup(prevState, formData) {
     // Re-throws the error to be handled by a higher-level error handler or crash the app if none exists.
     throw error;
   }
+}
+
+// No need for "classic" validation here (e.g., checking if the email contains '@' or if the password is long enough),
+// because at this point we're not storing user input — we're simply verifying it against existing data in the database.
+//
+// If the email doesn't exist, we return a general authentication error.
+// If the password doesn't match the stored hash, we return a similar authentication error.
+//
+// Validation is important during the signup process to prevent invalid or weak data from being stored,
+// but during login, we only care whether the provided credentials match an existing user.
+export async function login(prevState, formData) {
+  const email = formData.get('email');
+  const password = formData.get('password');
+
+  const existingUser = getUserByEmail(email);
+
+  if (!existingUser) {
+    return {
+      errors: {
+        email: 'Could not authenticate user, please check your credentials.',
+      },
+    };
+  }
+
+  // The user that is associated with the session for example
+  // const user = {
+  //   id: 'user123', // Must match session.userId
+  //   email: 'foo@bar.com', // User's unique email address
+  //   password: '$2b$10$8Gx...hashExample', // Hashed password (use bcrypt or similar)
+  // };
+  // ############################################################
+  // existingUser.password example:
+  // '5f2d7c4e8a1b3d2f4e6a9b7c1d0e5f3a:a1b2c3d4e5f6a7b8'
+  // (hashed password : salt)
+
+  // password example (the plain text password the user just typed):
+  // 'mySecret123'
+
+  // verifyPassword compares the hashed version of the supplied password (using the stored salt)
+  // with the stored hashed password, and returns true if they match, false otherwise.
+  // The comparison is done between the Buffer values of the hashed passwords after encryption.
+  const isValidPassword = verifyPassword(existingUser.password, password);
+
+  if (!isValidPassword) {
+    return {
+      errors: {
+        password: 'Could not authenticate user, please check your credentials.',
+      },
+    };
+  }
+
+  await createAuthSession(existingUser.id);
+  redirect('/training');
 }
